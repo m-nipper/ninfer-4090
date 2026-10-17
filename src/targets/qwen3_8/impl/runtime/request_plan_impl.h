@@ -119,7 +119,19 @@ ProgramImplCore::plan_request_base(const PreparedPromptData& prompt,
     };
     if (speculative_backend == SpeculativeBackend::Mtp) {
         base->backend_kv_page_entitlement = pages_for_tokens(mtp_extent(reserved_context_tokens));
-        base->backend_kv_page_ceiling     = pages_for_tokens(mtp_extent(ceiling_context_tokens));
+        // try_grow_decode_headroom asks the text cache for frontier + draft_window + 1 and the
+        // backend cache for that extent plus draft_window - 1, i.e. context + 2 * draft_window
+        // at the widest. The ceilings must cover that widest ask or the final rounds are
+        // curtailed with ContextCapacity one or two tokens short of max_tokens.
+        const auto clamp_capacity = [&](std::uint64_t tokens) {
+            return static_cast<std::uint32_t>(std::min<std::uint64_t>(capacity, tokens));
+        };
+        base->text_kv_page_ceiling =
+            pages_for_tokens(clamp_capacity(static_cast<std::uint64_t>(ceiling_context_tokens) +
+                                            draft_window + 1ULL));
+        base->backend_kv_page_ceiling = pages_for_tokens(
+            clamp_capacity(static_cast<std::uint64_t>(ceiling_context_tokens) +
+                           2ULL * draft_window));
     } else if (speculative_backend == SpeculativeBackend::DFlash) {
         base->backend_kv_page_entitlement = pages_for_tokens(reserved_context_tokens);
         base->backend_kv_page_ceiling     = pages_for_tokens(ceiling_context_tokens);
