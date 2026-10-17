@@ -250,6 +250,8 @@ ninfer::RequestOptions to_request_options(const GenerationRequest& request,
                                    .include_in_output = false});
         }
     }
+    // OpenAI completions ignore_eos: suppress the model's default stop tokens.
+    if (request.ignore_eos) { options.stop.include_model_defaults = false; }
     return options;
 }
 

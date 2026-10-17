@@ -415,13 +415,23 @@ PreparedRequest GenerationService::prepare(const GenerationRequest& request,
             host_input = acquire_media_input(prepared.lifetime->deadline, is_cancelled);
         }
         std::size_t remaining_media_bytes = options_.max_request_bytes;
-        ninfer::PromptInput input =
-            to_prompt_input(request, semantics, [&](const ContentPart& part) {
-                return acquire_media(part, prepared.lifetime->deadline, is_cancelled,
-                                     remaining_media_bytes);
-            });
-        check_preparation_control(prepared.lifetime->deadline, is_cancelled);
-        ninfer::PreparedPrompt prompt = engine_->prepare(std::move(input));
+        ninfer::PreparedPrompt prompt;
+        if (request.has_token_prompt) {
+            check_preparation_control(prepared.lifetime->deadline, is_cancelled);
+            prompt =
+                engine_->prepare_tokens(request.prompt_token_ids, options_.allow_prefix_reuse);
+        } else if (request.has_text_prompt) {
+            check_preparation_control(prepared.lifetime->deadline, is_cancelled);
+            prompt = engine_->prepare_plain_text(request.text_prompt, options_.allow_prefix_reuse);
+        } else {
+            ninfer::PromptInput input =
+                to_prompt_input(request, semantics, [&](const ContentPart& part) {
+                    return acquire_media(part, prepared.lifetime->deadline, is_cancelled,
+                                         remaining_media_bytes);
+                });
+            check_preparation_control(prepared.lifetime->deadline, is_cancelled);
+            prompt = engine_->prepare(std::move(input));
+        }
         check_preparation_control(prepared.lifetime->deadline, is_cancelled);
         prepared.prompt_tokens = static_cast<int>(prompt.summary().prompt_tokens);
         prepared.prepare_seconds =
@@ -431,7 +441,11 @@ PreparedRequest GenerationService::prepare(const GenerationRequest& request,
         prepared.sampling   = prepared.generation.resolved_sampling();
     } catch (const ApiException&) { throw; } catch (const ninfer::RequestError& exception) {
         throw_request_error(exception);
-    } catch (const std::invalid_argument& exception) { throw_invalid_input(exception); }
+    } catch (const std::logic_error& exception) {
+        // logic_error covers invalid_argument plus out_of_range/domain_error thrown by raw
+        // token validation (e.g. "prompt token is outside the checkpoint vocabulary").
+        throw_invalid_input(exception);
+    }
     return prepared;
 }
 

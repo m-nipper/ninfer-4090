@@ -125,6 +125,10 @@ public:
     [[nodiscard]] PreparedPrompt prepare_tokens(std::vector<TokenId> token_ids,
                                                 bool allow_prefix_identity = true) const;
 
+    // Plain text encoded with added-token parsing and no chat template, for /v1/completions.
+    [[nodiscard]] PreparedPrompt prepare_plain_text(std::string text,
+                                                    bool allow_prefix_identity = true) const;
+
     [[nodiscard]] std::uint32_t count_tokens(PromptInput input) const;
     [[nodiscard]] PromptCapabilities prompt_capabilities() const;
     [[nodiscard]] ModelSamplingDefaults sampling_defaults() const;

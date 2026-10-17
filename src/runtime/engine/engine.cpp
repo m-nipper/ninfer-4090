@@ -467,6 +467,25 @@ PreparedPrompt Engine::prepare_tokens(std::vector<TokenId> token_ids,
         impl_->active);
 }
 
+PreparedPrompt Engine::prepare_plain_text(std::string text, bool allow_prefix_identity) const {
+    if (impl_ == nullptr) { throw std::logic_error("Engine is moved from"); }
+    return std::visit(
+        [&](const auto& target_ptr) -> PreparedPrompt {
+            if (target_ptr == nullptr) { throw std::logic_error("Engine target is not active"); }
+            auto prepared      = target_ptr->loaded->frontend.prepare_text(std::move(text),
+                                                                           allow_prefix_identity);
+            PromptSummary info = prepared.summary();
+            if (info.prompt_tokens > target_ptr->capacity) {
+                throw RequestError(RequestErrorKind::ContextLengthExceeded,
+                                   "prepared prompt exceeds Engine context capacity");
+            }
+            const double seconds = prepared.prepare_seconds();
+            return PreparedPrompt(std::make_unique<PreparedPrompt::Impl>(
+                info, seconds, SamplingMode::Thinking, std::move(prepared)));
+        },
+        impl_->active);
+}
+
 std::uint32_t Engine::count_tokens(PromptInput input) const {
     if (impl_ == nullptr) { throw std::logic_error("Engine is moved from"); }
     return std::visit(

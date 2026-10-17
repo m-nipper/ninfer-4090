@@ -118,6 +118,9 @@ public:
     [[nodiscard]] std::uint32_t count_tokens(PromptInput input) const;
     [[nodiscard]] PreparedPrompt prepare_tokens(std::vector<TokenId> token_ids,
                                                 bool allow_prefix_identity = true) const;
+    // Plain text encoded with added-token parsing and no chat template.
+    [[nodiscard]] PreparedPrompt prepare_text(std::string text,
+                                              bool allow_prefix_identity = true) const;
     [[nodiscard]] PromptCapabilities prompt_capabilities() const noexcept;
     // System One decision layout (see decision.h). Throws DecisionInputError for budget errors.
     [[nodiscard]] DecisionPrompt prepare_decision(const DecisionInput& input) const;

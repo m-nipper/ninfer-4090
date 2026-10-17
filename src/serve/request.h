@@ -223,6 +223,17 @@ struct GenerationRequest {
     ninfer::PromptCacheMode prompt_cache_mode = ninfer::PromptCacheMode::Implicit;
     SamplingParams sampling;
 
+    // /v1/completions raw-prompt path: when either flag is set, prefill bypasses the chat
+    // template entirely (has_token_prompt carries explicit token IDs; has_text_prompt carries
+    // plain text encoded with added-token parsing only). messages stay empty on this path.
+    bool has_token_prompt               = false;
+    bool has_text_prompt                = false;
+    std::string text_prompt;
+    std::vector<ninfer::TokenId> prompt_token_ids;
+    // OpenAI completions semantics: clear the model's default stop tokens so generation runs
+    // to the token limit.
+    bool ignore_eos = false;
+
     [[nodiscard]] bool uses_tools() const noexcept {
         return !tools.empty() && tool_choice.mode != ToolChoiceMode::None;
     }

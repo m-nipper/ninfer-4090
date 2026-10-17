@@ -26,6 +26,21 @@ namespace ninfer::serve {
 GenerationRequest parse_chat_completion_request(const nlohmann::json& body,
                                                 const RequestLimits& limits);
 
+// OpenAI /v1/completions: prompt may be a plain string (template-less prefill) or an array of
+// token IDs (raw prefill, no template, no re-tokenization). ignore_eos suppresses the model's
+// default stop tokens. Throws ApiException on malformed or unsupported requests.
+GenerationRequest parse_completions_request(const nlohmann::json& body,
+                                            const RequestLimits& limits);
+std::string make_completion_response(const std::string& id, const std::string& model,
+                                     std::int64_t created, const std::string& text,
+                                     const char* finish_reason, const CompletionUsage& usage);
+std::string make_completion_chunk(const std::string& id, const std::string& model,
+                                  std::int64_t created, const std::string& text,
+                                  const char* finish_reason);
+std::string make_completion_usage_chunk(const std::string& id, const std::string& model,
+                                        std::int64_t created, const CompletionUsage& usage);
+std::string new_completion_id();
+
 std::optional<bool> parse_openai_preserve_thinking(const nlohmann::json& body);
 
 // Non-streaming chat completion response body (JSON string). When `reasoning` is

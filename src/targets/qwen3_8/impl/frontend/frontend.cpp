@@ -1031,6 +1031,11 @@ PreparedPrompt Frontend::prepare_tokens(std::vector<TokenId> token_ids,
     return PreparedPrompt(std::move(prepared));
 }
 
+PreparedPrompt Frontend::prepare_text(std::string text, bool allow_prefix_identity) const {
+    const std::vector<int> ids = impl_->tokenizer->encode(text);
+    return prepare_tokens(std::vector<TokenId>(ids.begin(), ids.end()), allow_prefix_identity);
+}
+
 DecisionPrompt Frontend::prepare_decision(const DecisionInput& input) const {
     const auto start = Clock::now();
     if (!impl_->decision_delimiters.has_value()) {
