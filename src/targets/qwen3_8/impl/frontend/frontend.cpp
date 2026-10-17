@@ -396,11 +396,12 @@ std::size_t channel_index(OutputChannel channel) noexcept {
 
 void append_delta(PublishedOutput& output, OutputChannel channel, std::string text) {
     if (text.empty()) { return; }
-    if (!output.empty() && output.back().channel == channel) {
-        output.back().text += text;
-    } else {
-        output.push_back(OutputDelta{.channel = channel, .text = std::move(text)});
-    }
+    // One OutputDelta per call (i.e. per generated token) rather than merging consecutive
+    // same-channel text: streaming clients measure latency per chunk (aiperf's
+    // inter_token_latency), so coalescing a multi-token MTP verify round into a single chunk
+    // would inflate the reported per-token latency by tokens-per-round. Concatenated text is
+    // unchanged; the incremental decoders above are split-invariant by construction.
+    output.push_back(OutputDelta{.channel = channel, .text = std::move(text)});
 }
 
 // U+FFFD REPLACEMENT CHARACTER.
