@@ -52,6 +52,7 @@ void reject_unknown_top_level(const Json& body) {
     // Keep standard client metadata/routing fields in the compatibility surface even when they do
     // not alter local inference. Truly unknown fields must never look successfully supported.
     reject_unknown_fields(body, {"audio",
+                                 "cache_salt",
                                  "chat_template_kwargs",
                                  "enable_thinking",
                                  "frequency_penalty",
@@ -743,6 +744,12 @@ GenerationRequest parse_chat_completion_request(const Json& body, const RequestL
     out.model = body.at("model").get<std::string>();
     if (body.contains("prompt_cache_key") && !body.at("prompt_cache_key").is_null()) {
         out.prompt_cache_routing_hint = body.at("prompt_cache_key").get<std::string>();
+    }
+    if (body.contains("cache_salt") && !body.at("cache_salt").is_null()) {
+        if (!body.at("cache_salt").is_string()) {
+            bad_request("cache_salt must be a string", "cache_salt");
+        }
+        out.prompt_cache_routing_hint = body.at("cache_salt").get<std::string>();
     }
 
     parse_tools(body, out);
