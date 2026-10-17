@@ -48,8 +48,8 @@ private:
 
 class PublishedOutput {
 public:
-    using iterator       = std::array<OutputDelta, 2>::iterator;
-    using const_iterator = std::array<OutputDelta, 2>::const_iterator;
+    using iterator       = std::vector<OutputDelta>::iterator;
+    using const_iterator = std::vector<OutputDelta>::const_iterator;
 
     PublishedOutput()                                  = default;
     PublishedOutput(const PublishedOutput&)            = default;
@@ -57,28 +57,28 @@ public:
     PublishedOutput(PublishedOutput&& other) noexcept;
     PublishedOutput& operator=(PublishedOutput&& other) noexcept;
 
-    [[nodiscard]] bool empty() const noexcept { return size_ == 0; }
+    [[nodiscard]] bool empty() const noexcept { return values_.empty(); }
 
-    [[nodiscard]] std::size_t size() const noexcept { return size_; }
+    [[nodiscard]] std::size_t size() const noexcept { return values_.size(); }
 
     [[nodiscard]] iterator begin() noexcept { return values_.begin(); }
 
     [[nodiscard]] const_iterator begin() const noexcept { return values_.begin(); }
 
-    [[nodiscard]] iterator end() noexcept { return values_.begin() + size_; }
+    [[nodiscard]] iterator end() noexcept { return values_.end(); }
 
-    [[nodiscard]] const_iterator end() const noexcept { return values_.begin() + size_; }
+    [[nodiscard]] const_iterator end() const noexcept { return values_.end(); }
 
-    [[nodiscard]] OutputDelta& back() noexcept { return values_[size_ - 1]; }
+    [[nodiscard]] OutputDelta& back() noexcept { return values_.back(); }
 
-    [[nodiscard]] const OutputDelta& back() const noexcept { return values_[size_ - 1]; }
+    [[nodiscard]] const OutputDelta& back() const noexcept { return values_.back(); }
 
     void clear() noexcept;
     void push_back(OutputDelta value);
 
 private:
-    std::array<OutputDelta, 2> values_{};
-    std::size_t size_ = 0;
+    // Dynamic storage: per-token emission appends one delta per generated token.
+    std::vector<OutputDelta> values_;
 };
 
 class OutputSession {
